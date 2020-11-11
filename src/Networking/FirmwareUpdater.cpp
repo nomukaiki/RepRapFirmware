@@ -45,7 +45,7 @@ namespace FirmwareUpdater
 	    int read(uint8_t* data, int size) noexcept;
 	    int write(const uint8_t* data, int size) noexcept;
 	    int get() noexcept;
-	    int put(int c) noexcept { return write(&((uint8_t) c), 1); }
+	    int put(int c) noexcept;
 
 	    bool timeout(int millisecs) noexcept { _timeout = millisecs; return true; }
 	    void flush() noexcept { this->uart->flush(); }
@@ -66,6 +66,12 @@ namespace FirmwareUpdater
 	        return -1;
 
 	    return byte;
+	}
+
+	int AuxSerialPort::put(int c) noexcept
+	{
+		uint8_t data = (uint8_t) c;
+		return write(&data, 1);
 	}
 
 	int AuxSerialPort::read(uint8_t* data, int size) noexcept
