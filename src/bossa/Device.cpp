@@ -50,7 +50,7 @@ Device::readChipId(uint32_t& chipId, uint32_t& extChipId)
 }
 
 void
-Device::create()
+Device::create(const StringRef exceptionScratch)
 {
     Flash* flashPtr;
     uint32_t chipId = 0;
@@ -66,17 +66,20 @@ Device::create()
     if ((_samba.readWord(0x0) & 0xff000000) == 0xea000000)
     {
         chipId = _samba.readWord(0xfffff240);
+    	exceptionScratch.cat(" 1 ");
     }
     else
     {
         // Next try the ARM CPUID register since all Cortex-M devices support it
         cpuId = _samba.readWord(0xe000ed00) & 0x0000fff0;
+    	exceptionScratch.cat(" 2 ");
 
         // Cortex-M0+
         if (cpuId == 0xC600)
         {
             // These should support the ARM device ID register
             deviceId = _samba.readWord(0x41002018);
+        	exceptionScratch.cat(" 3 ");
         }
         // Cortex-M4
         else if (cpuId == 0xC240)
@@ -85,17 +88,20 @@ Device::create()
             if ((_samba.readWord(0x4) & 0xfff00000) == 0x800000)
             {
                 readChipId(chipId, extChipId);
+            	exceptionScratch.cat(" 4 ");
             }
             // Else we should have a device that supports the ARM device ID register
             else
             {
                 deviceId = _samba.readWord(0x41002018);
+            	exceptionScratch.cat(" 5 ");
             }
         }
         // For all other Cortex versions try the Atmel chip ID registers
         else
         {
             readChipId(chipId, extChipId);
+        	exceptionScratch.cat(" 6 ");
         }
     }
 
@@ -631,7 +637,9 @@ Device::create()
     // Unsupported device
     //
     default:
-        throw DeviceUnsupportedError("Remote device unsupported");
+    	exceptionScratch.cat(" - Remote device unsupported: ");
+    	exceptionScratch.catf("%08" PRIx32 " - %08" PRIx32 " - %08" PRIx32 "", chipId, cpuId, extChipId);
+        throw DeviceUnsupportedError(exceptionScratch.c_str());
         break;
     }
 

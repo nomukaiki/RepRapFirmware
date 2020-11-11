@@ -89,6 +89,7 @@ Samba::init()
     {
         if (_debug)
             printf("Send auto-baud\n");
+#endif
 
         // RS-232 auto-baud sequence
         _port->put(0x80);
@@ -97,6 +98,7 @@ Samba::init()
         _port->get();
         _port->put('#');
         _port->read(cmd, 3);
+#if 0
     }
 #endif
 
@@ -208,7 +210,7 @@ Samba::writeByte(uint32_t addr, uint8_t value) THROWS(GCodeException)
 
     SafeSnprintf((char*) cmd, sizeof(cmd), "O%08" PRIX32 ",%02" PRIX8 "#", addr, value);
     if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) -  1)
-        throw SambaError("Samba::writeByte");
+        throw SambaError("Samba::writeByte: _port->write failed");
 
     // The SAM firmware has a bug that if the command and binary data
     // are received in the same USB data packet, then the firmware
@@ -230,9 +232,9 @@ Samba::readByte(uint32_t addr) THROWS(GCodeException)
 
     SafeSnprintf((char*) cmd, sizeof(cmd), "o%08" PRIX32 ",4#", addr);
     if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
-        throw SambaError("Samba::readByte 1");
+        throw SambaError("Samba::readByte: _port->write failed");
     if (_port->read(cmd, sizeof(uint8_t)) != sizeof(uint8_t))
-        throw SambaError("Samba::readByte 2");
+        throw SambaError("Samba::readByte: _port->read failed");
 
     value = cmd[0];
 
@@ -257,7 +259,7 @@ Samba::writeWord(uint32_t addr, uint32_t value) THROWS(GCodeException)
 
     SafeSnprintf((char*) cmd, sizeof(cmd), "W%08" PRIX32 ",%08" PRIX32 "#", addr, value);
     if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
-        throw SambaError("Samba::writeWord");
+        throw SambaError("Samba::writeWord: _port->write failed");
 
     // The SAM firmware has a bug that if the command and binary data
     // are received in the same USB data packet, then the firmware
@@ -280,9 +282,9 @@ Samba::readWord(uint32_t addr) THROWS(GCodeException)
 
     SafeSnprintf((char*) cmd, sizeof(cmd), "w%08" PRIX32 ",4#", addr);
     if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
-        throw SambaError("Samba::readWord 1");
+        throw SambaError("Samba::readWord: _port->write failed");
     if (_port->read(cmd, sizeof(uint32_t)) != sizeof(uint32_t))
-        throw SambaError("Samba::readWord 2");
+        throw SambaError("Samba::readWord: _port->read failed");
 
     value = (cmd[3] << 24 | cmd[2] << 16 | cmd[1] << 8 | cmd[0] << 0);
 
@@ -389,7 +391,7 @@ Samba::readXmodem(uint8_t* buffer, int size) THROWS(GCodeException)
                 _port->put(NAK);
         }
         if (retries == MAX_RETRIES)
-            throw SambaError("Samba::readXmodem: max retries reached");
+            throw SambaError("Samba::readXmodem: max retries reached 1");
 
         _port->put(ACK);
 
@@ -409,7 +411,7 @@ Samba::readXmodem(uint8_t* buffer, int size) THROWS(GCodeException)
         _port->put(NAK);
     }
     if (retries == MAX_RETRIES)
-        throw SambaError("Samba::readXmodem: max retries reached");
+        throw SambaError("Samba::readXmodem: max retries reached 2");
 }
 
 void
@@ -426,7 +428,7 @@ Samba::writeXmodem(const uint8_t* buffer, int size) THROWS(GCodeException)
             break;
     }
     if (retries == MAX_RETRIES)
-        throw SambaError("Samba::writeXmodem: max retries reached");
+        throw SambaError("Samba::writeXmodem: max retries reached 1");
 
     while (size > 0)
     {
@@ -442,14 +444,14 @@ Samba::writeXmodem(const uint8_t* buffer, int size) THROWS(GCodeException)
         {
             bytes = _port->write(blk, sizeof(blk));
             if (bytes != sizeof(blk))
-                throw SambaError("Samba::writeXmodem");
+                throw SambaError("Samba::writeXmodem: _port->write failed");
 
             if (_port->get() == ACK)
                 break;
         }
 
         if (retries == MAX_RETRIES)
-            throw SambaError("Samba::writeXmodem: max retries reached");
+            throw SambaError("Samba::writeXmodem: max retries reached 2");
 
         buffer += BLK_SIZE;
         size -= BLK_SIZE;
@@ -463,7 +465,7 @@ Samba::writeXmodem(const uint8_t* buffer, int size) THROWS(GCodeException)
             break;
     }
     if (retries == MAX_RETRIES)
-        throw SambaError("Samba::writeXmodem: max retries reached");
+        throw SambaError("Samba::writeXmodem: max retries reached 3");
 }
 
 #if 0
@@ -522,7 +524,7 @@ Samba::read(uint32_t addr, uint8_t* buffer, int size) THROWS(GCodeException)
 
         SafeSnprintf((char*) cmd, sizeof(cmd), "R%08" PRIX32 ",%08X#", addr, chunk);
         if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
-            throw SambaError("Samba::read");
+            throw SambaError("Samba::read: _port->write failed");
 
 #if 0
         if (_isUsb)
@@ -549,7 +551,7 @@ Samba::write(uint32_t addr, const uint8_t* buffer, int size) THROWS(GCodeExcepti
 
     SafeSnprintf((char*) cmd, sizeof(cmd), "S%08" PRIX32 ",%08X#", addr, size);
     if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
-        throw SambaError("Samba::write");
+        throw SambaError("Samba::write: _port->write failed");
 
     // The SAM firmware has a bug that if the command and binary data
     // are received in the same USB data packet, then the firmware
@@ -584,7 +586,7 @@ Samba::go(uint32_t addr) THROWS(GCodeException)
 
     SafeSnprintf((char*) cmd, sizeof(cmd), "G%08" PRIX32 "#", addr);
     if (_port->write(cmd, sizeof(cmd) - 1) != sizeof(cmd) - 1)
-        throw SambaError("Samba::go");
+        throw SambaError("Samba::go: _port->write failed");
 
     // The SAM firmware can get confused if another command is
     // received in the same USB data packet as the go command
@@ -648,7 +650,7 @@ Samba::chipErase(uint32_t start_addr) THROWS(GCodeException)
 
     int l = SafeSnprintf((char*) cmd, sizeof(cmd), "X%08" PRIX32 "#", start_addr);
     if (_port->write(cmd, l) != l)
-        throw SambaError("Samba::chipErase");
+        throw SambaError("Samba::chipErase: _port->write failed");
     _port->timeout(TIMEOUT_LONG);
     _port->read(cmd, 3); // Expects "X\n\r"
     _port->timeout(TIMEOUT_NORMAL);
@@ -673,7 +675,7 @@ Samba::writeBuffer(uint32_t src_addr, uint32_t dst_addr, uint32_t size) THROWS(G
     uint8_t cmd[64];
     int l = SafeSnprintf((char*) cmd, sizeof(cmd), "Y%08" PRIX32 ",0#", src_addr);
     if (_port->write(cmd, l) != l)
-        throw SambaError("Samba::writeBuffer 1");
+        throw SambaError("Samba::writeBuffer: _port->write 1 failed");
     _port->timeout(TIMEOUT_QUICK);
     cmd[0] = 0;
     _port->read(cmd, 3); // Expects "Y\n\r"
@@ -683,7 +685,7 @@ Samba::writeBuffer(uint32_t src_addr, uint32_t dst_addr, uint32_t size) THROWS(G
 
     l = SafeSnprintf((char*) cmd, sizeof(cmd), "Y%08" PRIX32 ",%08" PRIX32 "#", dst_addr, size);
     if (_port->write(cmd, l) != l)
-        throw SambaError("Samba::writeBuffer 2");
+        throw SambaError("Samba::writeBuffer: _port->write 2 failed");
     _port->timeout(TIMEOUT_LONG);
     cmd[0] = 0;
     _port->read(cmd, 3); // Expects "Y\n\r"
@@ -709,7 +711,7 @@ Samba::checksumBuffer(uint32_t start_addr, uint32_t size) THROWS(GCodeException)
     uint8_t cmd[64];
     int l = SafeSnprintf((char*) cmd, sizeof(cmd), "Z%08" PRIX32 ",%08" PRIX32 "#", start_addr, size);
     if (_port->write(cmd, l) != l)
-        throw SambaError("Samba::checksumBuffer 1");
+        throw SambaError("Samba::checksumBuffer: _port->write failed");
     _port->timeout(TIMEOUT_LONG);
     cmd[0] = 0;
     _port->read(cmd, 12); // Expects "Z00000000#\n\r"

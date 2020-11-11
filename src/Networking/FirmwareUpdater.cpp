@@ -31,46 +31,61 @@ namespace FirmwareUpdater
 	class AuxSerialPort : public SerialPort
 	{
 	public:
-		AuxSerialPort(UARTClass *uartClass) : uart(uartClass), autoflush(false)  {}
+		AuxSerialPort(UARTClass *uartClass) : uart(uartClass), _timeout(0) , _autoFlush(false) {}
 	    ~AuxSerialPort() {}
 
 	    bool open(int baud = 115200,
 	              int data = 8,
 	              SerialPort::Parity parity = SerialPort::ParityNone,
-	              SerialPort::StopBit stop = SerialPort::StopBitOne) { return true; }
-	    void close() {}
+	              SerialPort::StopBit stop = SerialPort::StopBitOne) noexcept { return true; }
+	    void close() noexcept {}
 
-	    bool isUsb() { return false; };
+	    bool isUsb() noexcept { return false; }
 
-	    int read(uint8_t* data, int size);
-	    int write(const uint8_t* data, int size);
-	    int get() { return this->uart->read(); }
-	    int put(int c) { return this->uart->write(c); }
+	    int read(uint8_t* data, int size) noexcept;
+	    int write(const uint8_t* data, int size) noexcept;
+	    int get() noexcept;
+	    int put(int c) noexcept { return write(&((uint8_t) c), 1); }
 
-	    bool timeout(int millisecs) { return true; }
-	    void flush() { this->uart->flush(); }
-	    void setDTR(bool dtr) {}
-	    void setRTS(bool rts) {}
-	    void setAutoFlush(bool newAutoflush) { this->autoflush = newAutoflush; }
+	    bool timeout(int millisecs) noexcept { _timeout = millisecs; return true; }
+	    void flush() noexcept { this->uart->flush(); }
+	    void setDTR(bool dtr) noexcept {}
+	    void setRTS(bool rts) noexcept {}
+	    void setAutoFlush(bool autoflush) noexcept { _autoFlush = autoflush; }
 	private:
 		UARTClass *uart;
-		bool autoflush;
+	    int _timeout;
+	    bool _autoFlush;
 	};
 
-	int AuxSerialPort::read(uint8_t* data, int size) {
-		int res = 0;
-    	for (int i = 0; i < size; ++i)
-    	{
-    		*data = get();
-    		++data;
-    		++res;
-    	}
-        return res;
-    }
+	int	AuxSerialPort::get() noexcept
+	{
+	    uint8_t byte;
 
-	int AuxSerialPort::write(const uint8_t* data, int size) {
+	    if (read(&byte, 1) != 1)
+	        return -1;
+
+	    return byte;
+	}
+
+	int AuxSerialPort::read(uint8_t* data, int size) noexcept
+	{
+		const uint32_t start = millis();
+		int read = 0;
+		do
+		{
+			const int readNow = (int) this->uart->readBytes((uint8_t*)data+read, size-read);
+			if (readNow >= 0)
+			{
+				read += readNow;
+			}
+		} while (read < size && (int) (millis() - start) < _timeout);
+		return read;
+	}
+
+	int AuxSerialPort::write(const uint8_t* data, int size) noexcept {
     	auto res = this->uart->write(data, size);
-        if (autoflush)
+        if (_autoFlush)
         {
             flush();
         }
@@ -134,6 +149,7 @@ namespace FirmwareUpdater
 # endif
 #endif
 
+		String<StringLength100> exceptionScratch;
 		// FIXME: This needs to be rewritten as a separate updater with a state-machine
 		if (module == PanelDueFirmwareModule)
 		{
@@ -145,7 +161,7 @@ namespace FirmwareUpdater
 				samba.connect(&port);
 
 				Device device(samba);
-				device.create();
+				device.create(exceptionScratch.GetRef());
 
 				Flash* flash = device.getFlash();
 
@@ -169,10 +185,9 @@ namespace FirmwareUpdater
 			}
 			catch (GCodeException& ex)
 			{
-				MessageType mt = AddError(MessageType::GenericMessage);
 				String<StringLength100> errorMessage;
 				ex.GetMessage(errorMessage.GetRef(), nullptr);
-				reprap.GetPlatform().MessageF(mt, "%s", errorMessage.c_str());
+				reprap.GetPlatform().MessageF(ErrorMessage, "%s", errorMessage.c_str());
 			}
 		}
 	}

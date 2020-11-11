@@ -8,7 +8,7 @@
 #include "Heating/Heat.h"
 #include "Endstops/ZProbe.h"
 
-#if HAS_WIFI_NETWORKING
+#if HAS_WIFI_NETWORKING || HAS_AUX_DEVICES
 # include "FirmwareUpdater.h"
 #endif
 
@@ -463,7 +463,7 @@ void GCodes::RunStateMachine(GCodeBuffer& gb, const StringRef& reply) noexcept
 		break;
 
 	case GCodeState::flashing1:
-#if HAS_WIFI_NETWORKING
+#if HAS_WIFI_NETWORKING || HAS_AUX_DEVICES
 // wilriker: This probably can be removed
 //		if (&gb == auxGCode)								// if M997 S1 is sent from USB, don't keep sending temperature reports
 //		{

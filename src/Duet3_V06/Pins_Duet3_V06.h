@@ -13,7 +13,7 @@
 # define IAP_FIRMWARE_FILE		"Duet3Firmware_" BOARD_SHORT_NAME ".bin"
 #endif
 
-const size_t NumFirmwareUpdateModules = 1;
+const size_t NumFirmwareUpdateModules = 5; // Firmware + PanelDue on 4 (all others in between unused)
 
 #define IAP_UPDATE_FILE			"Duet3_SDiap_" BOARD_SHORT_NAME ".bin"
 #define IAP_UPDATE_FILE_SBC		"Duet3_SBCiap_" BOARD_SHORT_NAME ".bin"

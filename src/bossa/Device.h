@@ -93,7 +93,7 @@ public:
     Device(Samba& samba) : _samba(samba), _flash(nullptr), _family(FAMILY_NONE) {}
     virtual ~Device() {  delete _flash; }
 
-    void create();
+    void create(const StringRef exceptionScratch);
 
     Family getFamily() { return _family; }
 
