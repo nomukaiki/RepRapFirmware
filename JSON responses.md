@@ -107,8 +107,8 @@ Values higher in the table also have a higher priority. So, for example, tool ch
 ### Coordinates
 
 - `coords/wpl` (optional): Selected workplace (see G10 and G54 to G59.3). May not be present if the board does not support workplaces
-- `cords/xyz`: User coordinates of the axes (i.e. with tool offsets applied)
-- `coords/machine`: Mchine coordinate of the axes (i.e. without tool offsets applied)
+- `coords/xyz`: User coordinates of the axes (i.e. with tool offsets applied)
+- `coords/machine`: Machine coordinate of the axes (i.e. without tool offsets applied)
 - `coords/extr` Total amount of filament extruded per extruder drive (with extrusion factors applied). See also `extrRaw` in response type 3
 
 ### Output
